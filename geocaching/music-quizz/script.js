@@ -159,6 +159,7 @@ function getImageState(imageUrl) {
       status: 'unsolved',
       band: '',
       note: '',
+      code: '',
       listened: false
     };
   }
@@ -171,6 +172,7 @@ function updateImageState(imageUrl, field, value) {
       status: 'unsolved',
       band: '',
       note: '',
+      code: '',
       listened: false
     };
   }
@@ -314,6 +316,10 @@ function showLargeImage(item) {
   // Set the listened checkbox
   const listenedCheckbox = document.getElementById('large-listened-checkbox');
   listenedCheckbox.checked = state.listened;
+
+  // Set the code
+  const codeInput = document.getElementById('large-code-input');
+  codeInput.value = state.code || '';
   
   // Find the clicked image element and add selected class
   const clickedImage = document.querySelector(`[data-image="${item.image}"]`)?.closest('.image-item');
@@ -472,6 +478,13 @@ function setupLargeImageControls() {
       updateImageState(currentLargeImageUrl, 'listened', e.target.checked);
     }
   });
+
+  const codeInput = document.getElementById('large-code-input');
+  codeInput.addEventListener('input', (e) => {
+    if (currentLargeImageUrl) {
+      updateImageState(currentLargeImageUrl, 'code', e.target.value);
+    }
+  });
   
   // Click outside to close dropdown
   document.addEventListener('click', (e) => {
@@ -591,7 +604,7 @@ function updateCountDisplay() {
 
 function downloadStateAsCSV() {
   // Create CSV content with header
-  let csvContent = 'Image Link,Certitude Link,Source,Status,Band Name,Notes,Listened\n';
+  let csvContent = 'Image Link,Certitude Link,Source,Status,Band Name,Notes,Listened,Code\n';
   
   // Process all data, not just filtered data
   allData.forEach(item => {
@@ -614,7 +627,8 @@ function downloadStateAsCSV() {
       escapeCSV(state.status),
       escapeCSV(state.band),
       escapeCSV(state.note),
-      state.listened ? 'Yes' : 'No'
+      state.listened ? 'Yes' : 'No',
+      escapeCSV(state.code),
     ].join(',');
     
     csvContent += row + '\n';
@@ -664,8 +678,8 @@ function renderImages() {
     imageItem.innerHTML = `
       <img src="${item.image}" alt="Band image" loading="lazy" data-image="${item.image}">
       <div class="info">
-        <div><strong>Band:</strong> ${bandName}</div>
-        <div><a href="${item.certitude}" target="_blank" class="certitude-link">Certitude Link</a></div>
+        <div><strong>Artist:</strong> ${bandName}</div>
+        <div><a href="${item.certitude}" target="_blank" class="certitude-link">Certitude Link</a> | <span title="Listened status">${state.listened ? '🔈' : '🔇'}</span></div>
       </div>
     `;
     
