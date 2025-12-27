@@ -13,16 +13,22 @@
 <div id="statistics" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: center;">
   <div>
     <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;" id="solved-percentage">0%</div>
-    <div style="color: #6c757d; font-size: 0.9rem;">Solved</div>
+    <div style="color: #6c757d; font-size: 0.9rem;">Solved Total</div>
+  </div>
+  <div>
+    <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;" id="solved-percentage-batch">0%</div>
+    <div style="color: #6c757d; font-size: 0.9rem;">Solved Batch</div>
   </div>
   <div>
     <div style="font-size: 1.5rem; font-weight: bold; color: #007bff;" id="listened-percentage">0%</div>
     <div style="color: #6c757d; font-size: 0.9rem;">Listened</div>
   </div>
-  <div>
-    <div style="font-size: 1.5rem; font-weight: bold; color: #6c757d;" id="total-count">0</div>
-    <div style="color: #6c757d; font-size: 0.9rem;">Total Images</div>
-  </div>
+</div>
+
+<div id="sum-of-codes-container" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: none;">
+  <h3 style="margin: 0 0 0.5rem 0; color: #856404;">🎉 Congratulations! All 20 Puzzles Solved!</h3>
+  <div style="font-weight: bold; margin-bottom: 0.5rem;">Sum of Codes: <span id="sum-of-codes-total">0</span></div>
+  <div id="sum-of-codes-details" style="font-family: monospace; font-size: 0.9rem; line-height: 1.6; color: #495057;"></div>
 </div>
 
 <div class="controls">
@@ -33,6 +39,8 @@
   <span id="count-display"></span>
   <button id="download-csv" type="button" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer;">Download State CSV</button>
 </div>
+
+
 
 <div id="large-image-display">
   <img id="large-image" src="" alt="Large view">
@@ -66,7 +74,6 @@
     </div>
   </div>
 </div>
-
 <div id="image-container"></div>
 
 <p id="status">Loading data…</p>

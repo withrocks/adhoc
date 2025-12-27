@@ -570,8 +570,12 @@ function setupLargeImageControls() {
 
 function updateStatistics() {
   const totalImages = allData.length;
+  const totalImagesBatch = filteredData.length;
   let solvedCount = 0;
   let listenedCount = 0;
+  let solvedCountBatch = 0;
+  let sumOfCodes = 0;
+  let sumOfCodesString = [];
   
   allData.forEach(item => {
     const state = getImageState(item.image);
@@ -582,13 +586,57 @@ function updateStatistics() {
       listenedCount++;
     }
   });
-  
+
+  let counter = 0;
+
+  filteredData.forEach(item => {
+    counter += 1;
+    const state = getImageState(item.image);
+    if (state.status === 'solved') {
+      solvedCountBatch++;
+    }
+
+    let parsable = false;
+    if (state.code) {
+      const n = Number(state.code);
+      if (Number.isFinite(n)) {
+        sumOfCodes += n;
+        parsable = true;
+      }
+    }
+
+    if (parsable) {
+      sumOfCodesString.push(state.code);
+    }
+    else {
+      sumOfCodesString.push(`⚠️#${counter}`);
+    }
+  });
+
+  // Update sum of codes display only when all 20 puzzles are solved
+  const sumOfCodesContainer = document.getElementById('sum-of-codes-container');
+  if (solvedCountBatch === 20) {
+    sumOfCodesContainer.style.display = 'block';
+    document.getElementById('sum-of-codes-total').textContent = sumOfCodes;
+    
+    // Format the codes nicely with each term on a new line
+    const formattedCodes = sumOfCodesString.map((code, index) => {
+      const prefix = index === 0 ? '  ' : '+ ';
+      return `${prefix}${code}`;
+    }).join('\n');
+    
+    document.getElementById('sum-of-codes-details').textContent = formattedCodes;
+  } else {
+    sumOfCodesContainer.style.display = 'none';
+  }
+
   const solvedPercentage = totalImages > 0 ? ((solvedCount / totalImages) * 100).toFixed(2) : "0.00";
   const listenedPercentage = totalImages > 0 ? ((listenedCount / totalImages) * 100).toFixed(2) : "0.00";
   
   document.getElementById('solved-percentage').textContent = `${solvedPercentage}%`;
+  // TODO: Rename field
+  document.getElementById('solved-percentage-batch').textContent = `${solvedCountBatch} / ${totalImagesBatch}`;
   document.getElementById('listened-percentage').textContent = `${listenedPercentage}%`;
-  document.getElementById('total-count').textContent = totalImages;
 }
 
 function updateCountDisplay() {
@@ -596,7 +644,7 @@ function updateCountDisplay() {
   const selectedSource = document.getElementById('source-select').value;
   
   if (selectedSource) {
-    countDisplay.textContent = `(${filteredData.length} images from ${selectedSource})`;
+    countDisplay.textContent = ``;
   } else {
     countDisplay.textContent = `(Please select a source file)`;
   }
@@ -666,7 +714,9 @@ function renderImages() {
   
   container.innerHTML = '';
   
+  let counter = 0;
   for (const item of filteredData) {
+    counter = counter + 1;
     const imageItem = document.createElement('div');
     imageItem.className = 'image-item';
     
@@ -678,7 +728,9 @@ function renderImages() {
     imageItem.innerHTML = `
       <img src="${item.image}" alt="Band image" loading="lazy" data-image="${item.image}">
       <div class="info">
+        <div><strong>#</strong></div>
         <div><strong>Artist:</strong> ${bandName}</div>
+        <div><strong>Code:</strong> ${state.code || '?'}</div>
         <div><a href="${item.certitude}" target="_blank" class="certitude-link">Certitude Link</a> | <span title="Listened status">${state.listened ? '🔈' : '🔇'}</span></div>
       </div>
     `;
