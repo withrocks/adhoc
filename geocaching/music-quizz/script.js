@@ -4,7 +4,7 @@ let bandsData = [];
 let finalSolutionLinks = {}; // Maps sourceFile to final solution link
 let imageStates = {}; // Store image states
 let lastSelectedBand = '';
-let bandsFuse = null; // Fuse.js instance
+let bandsPrepared = null; // Fuzzysort prepared data
 let searchTimeout = null;
 let currentHighlightIndex = -1;
 
@@ -19,36 +19,26 @@ function getBandUsageCounts() {
   return counts;
 }
 
-function initializeFuseSearch() {
+function initializeBandSearch() {
   if (bandsData.length === 0) return;
   
-  const options = {
-    includeScore: true,
-    threshold: 0.1, // Much more strict matching
-    distance: 1000, // Allow characters to be far apart
-    minMatchCharLength: 1,
-    findAllMatches: false,
-    includeMatches: false,
-    shouldSort: true,
-    ignoreLocation: false, // Don't ignore where in the string the match occurs
-    ignoreFieldNorm: true,
-    keys: ['name']
-  };
-  
-  const searchData = bandsData.map(band => ({ name: band }));
-  bandsFuse = new Fuse(searchData, options);
+  // Prepare bands for fuzzysort (improves search performance)
+  bandsPrepared = bandsData.map(band => fuzzysort.prepare(band));
 }
 
 function searchBands(query) {
-  if (!bandsFuse) return [];
+  if (!bandsPrepared) return [];
   
   if (!query.trim()) {
     // Return all bands when no query
-    return bandsData.slice(0, 25).map(band => ({ item: { name: band } }));
+    return bandsData.slice(0, 25).map(band => ({ target: band }));
   }
   
-  const results = bandsFuse.search(query);
-  return results.slice(0, 25); // Limit to 25 results
+  const results = fuzzysort.go(query, bandsPrepared, {
+    limit: 25,
+    threshold: -10000 // Only show decent matches
+  });
+  return results;
 }
 
 function renderBandDropdown(results, usageCounts) {
@@ -62,7 +52,7 @@ function renderBandDropdown(results, usageCounts) {
   }
   
   results.forEach((result, index) => {
-    const band = result.item.name;
+    const band = result.target;
     const usageCount = usageCounts[band] || 0;
     const isUsed = usageCount > 0;
     
@@ -393,9 +383,9 @@ function showLargeImage(item) {
   source.textContent = item.sourceFile;
   certitude.href = item.certitude;
   
-  // Initialize Fuse search if not done yet
-  if (!bandsFuse && bandsData.length > 0) {
-    initializeFuseSearch();
+  // Initialize band search if not done yet
+  if (!bandsPrepared && bandsData.length > 0) {
+    initializeBandSearch();
   }
   
   // Set current values
@@ -491,7 +481,7 @@ function setupLargeImageControls() {
     
     // Debounced search
     searchTimeout = setTimeout(() => {
-      if (bandsFuse) {
+      if (bandsPrepared) {
         const results = searchBands(query);
         const usageCounts = getBandUsageCounts();
         renderBandDropdown(results, usageCounts);
@@ -506,7 +496,7 @@ function setupLargeImageControls() {
   });
   
   bandInput.addEventListener('focus', () => {
-    if (bandsFuse) {
+    if (bandsPrepared) {
       const query = bandInput.value;
       const results = searchBands(query);
       const usageCounts = getBandUsageCounts();
