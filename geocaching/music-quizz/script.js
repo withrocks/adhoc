@@ -1,6 +1,7 @@
 let allData = [];
 let filteredData = [];
 let bandsData = [];
+let finalSolutionLinks = {}; // Maps sourceFile to final solution link
 let imageStates = {}; // Store image states
 let lastSelectedBand = '';
 let bandsFuse = null; // Fuse.js instance
@@ -201,24 +202,113 @@ async function loadBandsData() {
 }
 
 function parseCSV(csvText) {
-  const lines = csvText.trim().split('\n');
+  const lines = [];
+  let currentLine = '';
+  let insideQuotes = false;
+  
+  // Properly parse CSV handling quoted fields with newlines
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i];
+    const nextChar = csvText[i + 1];
+    
+    if (char === '"') {
+      if (insideQuotes && nextChar === '"') {
+        // Escaped quote
+        currentLine += '"';
+        i++; // Skip next quote
+      } else {
+        // Toggle quote state
+        insideQuotes = !insideQuotes;
+        currentLine += char;
+      }
+    } else if (char === '\n' && !insideQuotes) {
+      // End of line (not inside quotes)
+      if (currentLine.trim()) {
+        lines.push(currentLine);
+      }
+      currentLine = '';
+    } else if (char === '\r' && nextChar === '\n' && !insideQuotes) {
+      // Windows line ending
+      if (currentLine.trim()) {
+        lines.push(currentLine);
+      }
+      currentLine = '';
+      i++; // Skip the \n
+    } else {
+      currentLine += char;
+    }
+  }
+  
+  // Add last line if exists
+  if (currentLine.trim()) {
+    lines.push(currentLine);
+  }
+  
   const data = [];
   
   for (const line of lines) {
-    if (line.trim()) {
-      // Simple CSV parsing - split by comma but handle quoted values if needed
-      const parts = line.split(',');
-      if (parts.length >= 3) {
-        data.push({
-          image: parts[0].trim(),
-          certitude: parts[1].trim(),
-          sourceFile: parts[2].trim()
-        });
-      }
+    const parts = parseCSVLine(line);
+    if (parts.length >= 3) {
+      data.push({
+        image: parts[0],
+        certitude: parts[1],
+        sourceFile: parts[2]
+      });
     }
   }
   
   return data;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let insideQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (char === '"') {
+      if (insideQuotes && nextChar === '"') {
+        // Escaped quote becomes single quote
+        current += '"';
+        i++;
+      } else {
+        // Toggle quote state
+        insideQuotes = !insideQuotes;
+      }
+    } else if (char === ',' && !insideQuotes) {
+      // Field separator
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add last field
+  result.push(current.trim());
+  
+  return result;
+}
+
+function parseFinalSolutionLinksCSV(csvText) {
+  const lines = csvText.trim().split('\n');
+  const links = {};
+  
+  for (const line of lines) {
+    if (line.trim()) {
+      const parts = line.split(',');
+      if (parts.length >= 2) {
+        const sourceFile = parts[0].trim();
+        const link = parts[1].trim();
+        links[sourceFile] = link;
+      }
+    }
+  }
+  
+  return links;
 }
 
 function populateSourceDropdown() {
@@ -607,7 +697,7 @@ function updateStatistics() {
 
     if (parsable) {
       sumOfCodesString.push(state.code);
-    }
+     }
     else {
       sumOfCodesString.push(`⚠️#${counter}`);
     }
@@ -615,7 +705,7 @@ function updateStatistics() {
 
   // Update sum of codes display only when all 20 puzzles are solved
   const sumOfCodesContainer = document.getElementById('sum-of-codes-container');
-  if (solvedCountBatch === 20) {
+  if (solvedCountBatch === filteredData.length && filteredData.length > 0) {
     sumOfCodesContainer.style.display = 'block';
     document.getElementById('sum-of-codes-total').textContent = sumOfCodes;
     
@@ -626,6 +716,19 @@ function updateStatistics() {
     }).join('\n');
     
     document.getElementById('sum-of-codes-details').textContent = formattedCodes;
+    
+    // Update final solution link if available
+    const finalLinkElement = document.getElementById('final-solution-link');
+    if (filteredData.length > 0) {
+      const sourceFile = filteredData[0].sourceFile;
+      const finalLink = finalSolutionLinks[sourceFile];
+      if (finalLink) {
+        finalLinkElement.href = finalLink;
+        finalLinkElement.style.display = 'inline-block';
+      } else {
+        finalLinkElement.style.display = 'none';
+      }
+    }
   } else {
     sumOfCodesContainer.style.display = 'none';
   }
@@ -744,9 +847,10 @@ function renderImages() {
 
 async function loadData() {
   try {
-    // Load both CSV data and bands data
-    const [csvResponse] = await Promise.all([
+    // Load CSV data, bands data, and final solution links
+    const [csvResponse, finalLinksResponse] = await Promise.all([
       fetch("data.csv"),
+      fetch("final_sol_links.csv"),
       loadBandsData()
     ]);
     
@@ -756,6 +860,13 @@ async function loadData() {
 
     const csvText = await csvResponse.text();
     allData = parseCSV(csvText);
+    
+    // Load final solution links if available
+    if (finalLinksResponse.ok) {
+      const finalLinksText = await finalLinksResponse.text();
+      finalSolutionLinks = parseFinalSolutionLinksCSV(finalLinksText);
+      console.log(`Loaded ${Object.keys(finalSolutionLinks).length} final solution links`);
+    }
     filteredData = [];
 
     // Load saved image states
