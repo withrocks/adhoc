@@ -563,6 +563,23 @@ function setupLargeImageControls() {
   codeInput.addEventListener('input', (e) => {
     if (currentLargeImageUrl) {
       updateImageState(currentLargeImageUrl, 'code', e.target.value);
+      
+      const statusSelect = document.getElementById('large-status-select');
+      
+      // Automatically mark as solved when a code is entered
+      if (e.target.value.trim()) {
+        if (statusSelect.value !== 'solved') {
+          statusSelect.value = 'solved';
+          // Trigger the change event to update the state and UI properly
+          statusSelect.dispatchEvent(new Event('change'));
+        }
+      } else {
+        // Automatically mark as unsolved when code is emptied
+        if (statusSelect.value !== 'unsolved') {
+          statusSelect.value = 'unsolved';
+          statusSelect.dispatchEvent(new Event('change'));
+        }
+      }
     }
   });
   
