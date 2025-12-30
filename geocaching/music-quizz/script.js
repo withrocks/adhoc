@@ -838,7 +838,7 @@ function renderImages() {
     imageItem.innerHTML = `
       <img src="${item.image}" alt="Band image" loading="lazy" data-image="${item.image}">
       <div class="info">
-        <div><strong>#</strong></div>
+        <div><strong>#${counter}</strong></div>
         <div><strong>Artist:</strong> ${bandName}</div>
         <div><strong>Code:</strong> ${state.code || '?'}</div>
         <div><a href="${item.certitude}" target="_blank" class="certitude-link">Certitude Link</a> | <span title="Listened status">${state.listened ? '🔈' : '🔇'}</span></div>
@@ -850,6 +850,57 @@ function renderImages() {
     
     container.appendChild(imageItem);
   }
+}
+
+function getUnsolvedBands() {
+  const unsolvedBands = new Set();
+
+  const solvedBands = new Set();
+  Object.values(imageStates).forEach(state => {
+    if (state.status === 'solved' && state.band) {
+      solvedBands.add(state.band);
+    }
+  });
+  
+  bandsData.forEach(item => {
+    if (!solvedBands.has(item))
+      unsolvedBands.add(item);
+  });
+  
+  return Array.from(unsolvedBands).sort();
+}
+
+function setupUnsolvedBandsModal() {
+  const modal = document.getElementById('unsolved-modal');
+  const showBtn = document.getElementById('show-unsolved-btn');
+  const closeBtn = document.getElementById('close-modal');
+  const textarea = document.getElementById('unsolved-bands-textarea');
+  
+  // Show modal when button is clicked
+  showBtn.addEventListener('click', () => {
+    const unsolvedBands = getUnsolvedBands();
+    textarea.value = unsolvedBands.join('\n');
+    modal.style.display = 'block';
+  });
+  
+  // Close modal when close button is clicked
+  closeBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+  
+  // Close modal when clicking outside of it
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+  
+  // Close modal with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'block') {
+      modal.style.display = 'none';
+    }
+  });
 }
 
 async function loadData() {
@@ -891,6 +942,9 @@ async function loadData() {
     
     // Setup download button
     document.getElementById('download-csv').addEventListener('click', downloadStateAsCSV);
+    
+    // Setup unsolved bands modal
+    setupUnsolvedBandsModal();
 
   } catch (err) {
     document.getElementById("status").textContent = 
