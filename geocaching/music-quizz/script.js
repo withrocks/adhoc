@@ -35,7 +35,6 @@ function searchBands(query) {
   }
   
   const results = fuzzysort.go(query, bandsPrepared, {
-    limit: 25,
     threshold: -10000 // Only show decent matches
   });
   return results;
@@ -55,24 +54,25 @@ function renderBandDropdown(results, usageCounts) {
     const band = result.target;
     const usageCount = usageCounts[band] || 0;
     const isUsed = usageCount > 0;
-    
-    const option = document.createElement('div');
-    option.className = `band-option${isUsed ? ' used' : ''}`;
-    option.dataset.index = index;
-    option.dataset.band = band;
-    
-    option.innerHTML = `
-      ${isUsed ? '<span class="band-used-icon">★</span>' : ''}
-      <span>${band}</span>
-      ${isUsed ? `<span class="band-usage-count">(${usageCount}x)</span>` : ''}
-    `;
-    
-    option.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      selectBand(band);
-    });
-    dropdown.appendChild(option);
+    if (!isUsed) {
+      const option = document.createElement('div');
+      option.className = `band-option${isUsed ? ' used' : ''}`;
+      option.dataset.index = index;
+      option.dataset.band = band;
+      
+      option.innerHTML = `
+        ${isUsed ? '<span class="band-used-icon">★</span>' : ''}
+        <span>${band}</span>
+        ${isUsed ? `<span class="band-usage-count">(${usageCount}x)</span>` : ''}
+      `;
+      
+      option.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        selectBand(band);
+      });
+      dropdown.appendChild(option);
+    }
   });
 }
 
