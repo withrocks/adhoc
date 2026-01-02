@@ -870,6 +870,36 @@ function getUnsolvedBands() {
   return Array.from(unsolvedBands).sort();
 }
 
+function setupInfoModal() {
+  const modal = document.getElementById('info-modal');
+  const showBtn = document.getElementById('show-info-btn');
+  const closeBtn = document.getElementById('info-modal-close');
+  
+  // Show modal when button is clicked
+  showBtn.addEventListener('click', () => {
+    modal.style.display = 'block';
+  });
+  
+  // Close modal when close button is clicked
+  closeBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+  
+  // Close modal when clicking outside of it
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+  
+  // Close modal with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'block') {
+      modal.style.display = 'none';
+    }
+  });
+}
+
 function setupUnsolvedBandsModal() {
   const modal = document.getElementById('unsolved-modal');
   const showBtn = document.getElementById('show-unsolved-btn');
@@ -945,6 +975,9 @@ async function loadData() {
     
     // Setup unsolved bands modal
     setupUnsolvedBandsModal();
+
+    // Setup info button
+    setupInfoModal();
 
   } catch (err) {
     document.getElementById("status").textContent = 
